@@ -37,7 +37,7 @@ def run_code(code:str, language:str | None)->CodeResult:
         script_path=f.name
 
     try:
-        result=subprocess.run(["python3",script_path],capture_output=True, text=True, timout=TIMEOUT_SECONDS,)
+        result=subprocess.run(["python3",script_path],capture_output=True, text=True, timeout=TIMEOUT_SECONDS,)
         output=result.stdout if result.returncode==0 else result.stderr
         kind = "output" if result.returncode ==0 else "error"
         return CodeResult(kind, output[:MAX_OUTPUT_CHAR])

@@ -1,10 +1,11 @@
 import json
 import re
+import base64
+from groq import Groq
+from config import GROQ_API_KEY, GROQ_MODEL
 
-import google.generativeai as genai
-from config import GEMINI_API_KEY, GEMINI_MODEL
-
-genai.configure(api_key=GEMINI_API_KEY)
+groq_model=GROQ_MODEL
+client=Groq(api_key=GROQ_API_KEY)
 
 PROMPT="""You are reading a photo of a handwritten page from a digital notebook.
  
@@ -27,25 +28,43 @@ Rules:
 - If you genuinely can't tell what it is, use "unclear" and leave content as
   your best-effort transcription anyway.
 """
+def encode_img(image_path:str)->str:
+    """Encodes local img to base64 str"""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
 
+    
 def analyze_page(image_path:str)->dict:
-    model=genai.GenerativeModel(GEMINI_MODEL)
-    with open(image_path,'rb') as f:
-        image_bytes=f.read()
-    response=model.generate_content(
-        [
-            PROMPT,
-            {"mime_type":"image/png","data":image_bytes},
+    base64_image=encode_img(image_path)
+    response=client.chat.completions.create(
+        model=groq_model,
+        response_format={"type":"json_object"},
+        temperature=0.0,
+        messages=[
+            {
+                "role":"user",
+                "content":[
+                    {
+                        "type":"text",
+                        "text":PROMPT
+                    },
+                    {
+                        "type":"image_url",
+                        "image_url":{
+                            "url":f"data:image/png;base64,{base64_image}"
+                        }
+                    }
+                ]
+            }
         ]
     )
-    text=response.text.strip()
-    text = re.sub(r"^```(json)?|```$", "", text.strip(), flags=re.MULTILINE).strip()
+    text=response.choices[0].message.content.strip()
 
     try:
         result=json.loads(text)
     except json.JSONDecodeError as e:
         raise ValueError(
-           f"Gemini didn't return valid JSON. Raw response:\n{text}"
+           f"Groq didn't return valid JSON. Raw response:\n{text}"
         ) from e
     return result
 

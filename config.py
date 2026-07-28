@@ -7,8 +7,8 @@ RM_USER = os.environ.get("RM_USER","root")
 RM_XOCHITL_PATH= "/home/root/.local/share/remarkable/xochitl"
 
 #gemini stuff
-GEMINI_API_KEY=os.environ.get("GEMENI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+GROQ_API_KEY=os.environ.get("GROQ_API_KEY")
+GROQ_MODEL=os.environ.get("GROQ_MODEL","qwen/qwen3.6-27b")
 
 #local working dirs
 WORKDIR = os.environ.get("RM_PIPELINE_WORKDIR", os.path.expanduser("~/.rm_pipeline"))
