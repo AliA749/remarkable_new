@@ -16,6 +16,8 @@ object (no markdown fences, no commentary) in this exact shape:
   "type": "math" | "code" | "unclear",
   "language": "<programming language if type is code, else null>",
   "content": "<the transcribed LaTeX if math, or the transcribed source code if code>",
+  "annotation_description": "<see instructions below>",
+  "trigger": true | false,
   "notes": "<anything you're unsure about, or empty string>"
 }
  
@@ -27,6 +29,23 @@ Rules:
   pen stroke), and note anything you changed in "notes".
 - If you genuinely can't tell what it is, use "unclear" and leave content as
   your best-effort transcription anyway.
+- For "annotation_description": look CAREFULLY across the ENTIRE image for
+  two specific hand-drawn marks, separate from the math/code content itself:
+    1. An enclosure -- a box, rectangle, or oval/circle drawn AROUND the
+       expression or code (i.e. lines forming a border on multiple sides of
+       it, not just underlining).
+    2. A checkmark (a short two-stroke tick/tick mark, shaped like a
+       lowercase "v" or check symbol) OR a star (multi-pointed asterisk-like
+       shape), drawn near/beside the enclosure -- NOT part of the math
+       itself (e.g. not a multiplication symbol or variable).
+  Describe in one sentence exactly what you see: is there an enclosure?
+  Is there a checkmark or star near it? Where relative to the content?
+  If you see neither, say so explicitly (e.g. "No enclosure or checkmark
+  visible.").
+- Set "trigger" to true IF AND ONLY IF your own "annotation_description"
+  confirms BOTH an enclosure AND a checkmark/star are present. If your
+  description says either one is missing, "trigger" must be false --
+  even if the math/code looks complete and correct.
 """
 def encode_img(image_path:str)->str:
     """Encodes local img to base64 str"""

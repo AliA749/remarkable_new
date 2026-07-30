@@ -34,16 +34,26 @@ from config import RM_HOST, RM_USER, RM_XOCHITL_PATH, PAGES_DIR
 def _ssh(cmd: str) -> str:
     result = subprocess.run(
         ["ssh", f"{RM_USER}@{RM_HOST}", cmd],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"SSH command failed (exit {result.returncode}): {cmd}\n"
+            f"stderr: {result.stderr.strip()}"
+        )
     return result.stdout
 
 
 def _scp(remote_path: str, local_path: str):
-    subprocess.run(
+    result=subprocess.run(
         ["scp", f"{RM_USER}@{RM_HOST}:{remote_path}", local_path],
         check=True, capture_output=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"SCP failed (exit {result.returncode}): {remote_path} -> {local_path}\n"
+            f"stderr: {result.stderr.strip()}"
+        )
 
 
 def find_most_recent_notebook_uuid() -> str:
@@ -53,6 +63,9 @@ def find_most_recent_notebook_uuid() -> str:
     uuid = os.path.basename(metadata_path).replace(".metadata", "")
     return uuid
 
+def get_notebook_mtime(uuid:str)->float:
+    out=_ssh(f"stat -c %Y {RM_XOCHITL_PATH}/{uuid}.metadata")
+    return float(out.strip())
 
 def _sorted_page_ids(content_data: dict) -> list:
     """Return page ids in reading order from a (possibly nested) .content file."""
