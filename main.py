@@ -7,7 +7,6 @@ once this works e2e for you, watch.py turns this to a polling loop
 
 from fetch_page import get_latest_page_image
 from ocr_gemini import analyze_page
-from math_engine import decide_and_render
 from code_engine import run_code
 
 def process_latest_page():
@@ -20,6 +19,7 @@ def process_latest_page():
     print(f"  type={analysis['type']}  notes={analysis.get('notes') or '(none)'}")
  
     if analysis["type"] == "math":
+        from math_engine import decide_and_render
         result = decide_and_render(analysis["content"])
         print(f"\n[MATH] {result.kind}: {result.text}")
         if result.image_path:

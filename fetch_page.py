@@ -25,17 +25,43 @@ for v6.
 import subprocess
 import os
 import json
+import shutil
+import sys
 
 import cairosvg
 
-from config import RM_HOST, RM_USER, RM_XOCHITL_PATH, PAGES_DIR
+from config import (
+    RM_HOST,
+    RM_USER,
+    RM_XOCHITL_PATH,
+    PAGES_DIR,
+    SSH_COMMAND_TIMEOUT_SECONDS,
+    SCP_COMMAND_TIMEOUT_SECONDS,
+    RMC_COMMAND_TIMEOUT_SECONDS,
+)
+
+
+def _rmc_executable() -> str:
+    path = shutil.which("rmc")
+    if path:
+        return path
+
+    venv_script = os.path.join(os.path.dirname(sys.executable), "rmc")
+    if os.path.exists(venv_script):
+        return venv_script
+
+    raise RuntimeError("Could not find 'rmc'. Activate .venv or install rmc.")
 
 
 def _ssh(cmd: str) -> str:
-    result = subprocess.run(
-        ["ssh", f"{RM_USER}@{RM_HOST}", cmd],
-        capture_output=True, text=True,
-    )
+    try:
+        result = subprocess.run(
+            ["ssh", f"{RM_USER}@{RM_HOST}", cmd],
+            capture_output=True, text=True,
+            timeout=SSH_COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"SSH command timed out after {e.timeout}s: {cmd}") from e
     if result.returncode != 0:
         raise RuntimeError(
             f"SSH command failed (exit {result.returncode}): {cmd}\n"
@@ -45,10 +71,16 @@ def _ssh(cmd: str) -> str:
 
 
 def _scp(remote_path: str, local_path: str):
-    result=subprocess.run(
-        ["scp", f"{RM_USER}@{RM_HOST}:{remote_path}", local_path],
-        check=True, capture_output=True,
-    )
+    try:
+        result=subprocess.run(
+            ["scp", f"{RM_USER}@{RM_HOST}:{remote_path}", local_path],
+            capture_output=True,
+            timeout=SCP_COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(
+            f"SCP timed out after {e.timeout}s: {remote_path} -> {local_path}"
+        ) from e
     if result.returncode != 0:
         raise RuntimeError(
             f"SCP failed (exit {result.returncode}): {remote_path} -> {local_path}\n"
@@ -119,17 +151,21 @@ def convert_rm_to_png(rm_path: str) -> str:
     base, _ = os.path.splitext(rm_path)  # only strips the trailing ".rm"
     svg_path = base + ".svg"
 
-    result = subprocess.run(
-        ["rmc", "-t", "svg", "-o", svg_path, rm_path],
-        capture_output=True, text=True,
-    )
+    try:
+        result = subprocess.run(
+            [_rmc_executable(), "-t", "svg", "-o", svg_path, rm_path],
+            capture_output=True, text=True,
+            timeout=RMC_COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"rmc timed out after {e.timeout}s: {rm_path}") from e
     if result.returncode != 0:
         raise RuntimeError(f"rmc failed:\nstdout: {result.stdout}\nstderr: {result.stderr}")
     if not os.path.exists(svg_path) or os.path.getsize(svg_path) == 0:
         raise RuntimeError(f"rmc produced no SVG output.\nstdout: {result.stdout}\nstderr: {result.stderr}")
 
     png_path = base + ".png"
-    cairosvg.svg2png(url=svg_path, write_to=png_path, dpi=200)
+    cairosvg.svg2png(url=svg_path, write_to=png_path, dpi=150)
 
     return png_path
 
