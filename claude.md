@@ -34,10 +34,6 @@ then graph/solve the math or run the code.
   up in "My files" as `RESULTS_DOC_NAME` (default "Pipeline results").
   Set `PUSH_RESULTS_TO_TABLET=0` to only annotate locally.
 - `main.py` — orchestrates all of the above, one-shot manual trigger
-- `watch.py` — polls the tablet over WiFi (no cable needed), waits for
-  writing to settle (~20s quiet), then checks for a hand-drawn trigger
-  marker (box/circle + checkmark or star) before running the pipeline.
-  State persists across restarts so it won't re-trigger on old content.
 
 ### Key bugs solved along the way (don't re-hit these)
 - `rmrl` (last released 2021) does NOT support the newer v6 `.rm` stroke
