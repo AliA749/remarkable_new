@@ -24,6 +24,15 @@ then graph/solve the math or run the code.
   simplify, renders graphs with matplotlib
 - `code_engine.py` — runs Python snippets in a subprocess sandbox (8s
   timeout, output capped)
+- `annotate_page.py` — puts the answer back ON the page: takes the
+  page SVG, renders the answer (text via PIL, or the graph PNG) and
+  injects it into the SVG in a full-width band at the bottom of the
+  page, then exports an annotated PNG + PDF. The PDF is
+  pushed onto the tablet via SSH using the pdf2remarkable recipe (copy
+  PDF + generated UUID/.metadata/.content + cache/highlights/thumbnails
+  dirs into xochitl's dir, then `systemctl restart xochitl`) so it shows
+  up in "My files" as `RESULTS_DOC_NAME` (default "Pipeline results").
+  Set `PUSH_RESULTS_TO_TABLET=0` to only annotate locally.
 - `main.py` — orchestrates all of the above, one-shot manual trigger
 - `watch.py` — polls the tablet over WiFi (no cable needed), waits for
   writing to settle (~20s quiet), then checks for a hand-drawn trigger
@@ -73,18 +82,13 @@ then graph/solve the math or run the code.
   -> Copyright and licenses.
 
 ## Next
-- **Output the answer next to the source, on the device itself** — right
-  now results only print to the terminal / save as a local PNG. The goal
-  is to render the graph/answer and get it back onto the reMarkable near
-  the original handwritten equation/code, not just locally. This is the
-  main remaining milestone -- everything else (fetch, OCR, trigger
-  detection, WiFi auto-watch) is working end-to-end.
-  - Realistic approaches to evaluate: (a) push result as a new page in a
-    companion "Results" notebook via `rmapi`/`rmfakecloud`, glanced at
-    side-by-side; (b) splice the rendered result image directly into the
-    same page's `.rm`/`.content` files and re-upload, which is closer to
-    "next to the source" but touches reMarkable's undocumented format
-    more invasively.
+- **On-tablet results are a static PDF copy, not the editable page** — the
+  answer lands next to the source, but as a new PDF document; the
+  handwriting+answer are baked in and that copy isn't editable. A future
+  step could be splicing the answer into the same page's `.rm`/`.content`
+  files (approach (b), more invasive) so the original notebook page
+  itself shows the answer. Also: each run creates a new "Pipeline
+  results" document — pruning old ones isn't automated.
 - Code execution currently Python-only; other languages unsupported
 - Multi-variable / implicit equation graphing (e.g. `x^2 + y^2 = 1`) not
   handled yet — single-variable only right now

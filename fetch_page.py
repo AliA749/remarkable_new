@@ -108,21 +108,52 @@ def _sorted_page_ids(content_data: dict) -> list:
     return [p["id"] for p in ordered if "id" in p and not p.get("deleted")]
 
 
+def _existing_page_ids(uuid: str) -> set:
+    """The page ids that actually exist as .rm files on the tablet right
+    now. .content files can reference stale/deleted pages, so this is
+    ground truth for what we can actually pull."""
+    out = _ssh(f"ls {RM_XOCHITL_PATH}/{uuid}/*.rm 2>/dev/null || true")
+    ids = set()
+    for line in out.splitlines():
+        name = os.path.basename(line.strip())
+        if name.endswith(".rm"):
+            ids.add(name[:-3])
+    return ids
+
+
 def get_current_page_id(local_dir: str, uuid: str) -> str:
-    """Figure out which page is the one you were actually just writing on."""
+    """Figure out which page is the one you were actually just writing on.
+
+    Prefers cPages.lastOpened.value, but only if that page actually exists
+    on disk -- lastOpened can point at a deleted/stale page, which used to
+    blow up the scp with a "No such file or directory" error. Falls back
+    to the last page in reading order that exists, then any existing page.
+    """
     content_file = os.path.join(local_dir, f"{uuid}.content")
     with open(content_file) as f:
         content_data = json.load(f)
 
+    existing = _existing_page_ids(uuid)
+
     last_opened = content_data.get("cPages", {}).get("lastOpened", {}).get("value")
-    if last_opened:
+    if last_opened and last_opened in existing:
         return last_opened
 
-    # Fall back to the last page in reading order
-    page_ids = _sorted_page_ids(content_data)
-    if not page_ids:
-        raise ValueError(f"No pages found in {content_file}")
-    return page_ids[-1]
+    # Fall back to the last page in reading order that exists on disk
+    ordered = [pid for pid in _sorted_page_ids(content_data) if pid in existing]
+    if ordered:
+        return ordered[-1]
+
+    # Last resort: any page file at all
+    if existing:
+        return sorted(existing)[0]
+
+    raise ValueError(
+        f"No readable pages for notebook {uuid} on the tablet "
+        f"(no .rm files under {RM_XOCHITL_PATH}/{uuid}/). "
+        "Is this actually a notebook? Open the notebook you want to process "
+        "and write on it, then retry."
+    )
 
 
 def pull_content_file(uuid: str) -> str:
@@ -178,10 +209,16 @@ def get_latest_page_image() -> dict:
     rm_path = pull_page_rm_file(uuid, page_id, local_dir)
     png_path = convert_rm_to_png(rm_path)
 
+    # The SVG is the vector source of truth for the page -- used later to
+    # inject the solution right next to the handwritten question.
+    svg_path = os.path.splitext(rm_path)[0] + ".svg"
+
     return {
         "uuid": uuid,
         "page_id": page_id,
         "local_dir": local_dir,
+        "rm_path": rm_path,
+        "svg_path": svg_path,
         "png_path": png_path,
     }
 

@@ -8,6 +8,7 @@ once this works e2e for you, watch.py turns this to a polling loop
 from fetch_page import get_latest_page_image
 from ocr_gemini import analyze_page
 from code_engine import run_code
+from config import RESULTS_DOC_NAME
 
 def process_latest_page():
     print("Pulling latest page from tablet...")
@@ -18,6 +19,7 @@ def process_latest_page():
     analysis = analyze_page(page_info["png_path"])
     print(f"  type={analysis['type']}  notes={analysis.get('notes') or '(none)'}")
  
+    result = None
     if analysis["type"] == "math":
         from math_engine import decide_and_render
         result = decide_and_render(analysis["content"])
@@ -31,6 +33,21 @@ def process_latest_page():
  
     else:
         print(f"\n[UNCLEAR] Best-effort transcription: {analysis['content']}")
+ 
+    if result is not None:
+        from annotate_page import annotate_and_push
+        out = annotate_and_push(
+            svg_path=page_info["svg_path"],
+            bbox=analysis["content_bbox"],
+            answer_text=result.text,
+            answer_image_path=result.image_path,
+        )
+        print(f"\nAnnotated page: {out['png']}")
+        print(f"Annotated PDF:  {out['pdf']}")
+        if out["doc_uuid"]:
+            print(f"Pushed to tablet as '{RESULTS_DOC_NAME}' (document {out['doc_uuid']})")
+        else:
+            print("(push to tablet disabled -- set PUSH_RESULTS_TO_TABLET=1 to enable)")
  
     return analysis
  

@@ -19,6 +19,13 @@ RESULTS_DIR = os.path.join(WORKDIR, "results")
 for d in (WORKDIR, PAGES_DIR, RESULTS_DIR):
     os.makedirs(d, exist_ok=True)
 
+#---Result push-back settings---
+# After solving, annotate the page with the answer and push the annotated
+# PDF back onto the tablet (shows up in "My files"). Set to "0" to only
+# produce the annotated PDF locally.
+PUSH_RESULTS_TO_TABLET = os.environ.get("PUSH_RESULTS_TO_TABLET", "1").lower() in {"1", "true", "yes"}
+RESULTS_DOC_NAME = os.environ.get("RESULTS_DOC_NAME", "Pipeline results")
+
 #---Watch loop settings---
 POLL_INTERVAL_SECONDS=int(os.environ.get("POLL_INTERVAL_SECONDS","3"))
 QUIET_POLLS_THRESHOLD = int(os.environ.get("QUIET_POLLS_THRESHOLD", "1"))

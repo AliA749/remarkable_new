@@ -6,3 +6,5 @@ antlr4-python3-runtime==4.11
 matplotlib
 numpy
 python-dotenv
+pymupdf
+pillow

@@ -17,8 +17,11 @@ open pipeline instead of a closed app.
    - Math → parsed with `sympy`, then either solved algebraically or
      graphed with `matplotlib`
    - Code → run in a sandboxed Python subprocess, output captured
-4. Prints the result to your terminal (see **Current limitations** below
-   for what's not built yet)
+4. Prints the result to your terminal **and renders it back onto the
+   page**: the answer (text or graph) is placed in a full-width band at
+   the bottom of the page, the page is exported as a PDF, and the PDF is
+   pushed back to the tablet (shows up in "My files" as
+   "Pipeline results")
 
 ## How it works under the hood
 
@@ -91,6 +94,13 @@ ssh-copy-id root@10.11.99.1
    by default), then checks for that marker and runs the pipeline only
    if it's there — so it won't fire on every stroke.
 
+The annotated page also lands back on the tablet: a PDF with the
+handwritten question and the answer side-by-side appears in **My files**
+as `Pipeline results` (rename it with `RESULTS_DOC_NAME` in `.env`, or
+set `PUSH_RESULTS_TO_TABLET=0` to only keep the annotated PDF locally).
+Each run creates a new document, so delete the old ones from the tablet
+when they pile up.
+
 ## Current limitations
 
 This is an early, working MVP, not a polished tool. Known gaps:
@@ -98,9 +108,11 @@ This is an early, working MVP, not a polished tool. Known gaps:
 - **`watch.py`'s "settled" detection is time-based, not truly live** —
   reMarkable has no push-notification hook for page changes, so it's
   short-interval polling (checks every ~10s, acts after ~20s of no edits).
-- **Results only go to your terminal / a local PNG** — nothing gets
-  written back onto the tablet yet. That's the next planned feature:
-  rendering the answer back near the source handwriting.
+- **The on-tablet result is a static PDF copy of the page** — the
+  handwritten question plus the answer are baked into a new PDF document
+  ("Pipeline results"), so that copy isn't editable. The original
+  notebook page is untouched. The answer is always placed in a full-width
+  band at the bottom of the page.
 - **Code execution is Python-only**, run in a subprocess with an 8-second
   timeout — not a hardened sandbox. Fine for your own snippets; don't
   point this at untrusted input.

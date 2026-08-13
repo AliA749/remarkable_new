@@ -15,10 +15,19 @@ object (no markdown fences, no commentary) in this exact shape:
   "type": "math" | "code" | "unclear",
   "language": "<programming language if type is code, else null>",
   "content": "<the transcribed LaTeX if math, or the transcribed source code if code>",
+  "content_bbox": [x0, y0, x1, y1],
   "annotation_description": "<see instructions below>",
   "trigger": true | false,
   "notes": "<anything you're unsure about, or empty string>"
 }
+ 
+For "content_bbox": give the bounding box of the handwriting you classified
+(the content inside the marked enclosure if one is present, otherwise the
+main content), as fractions of the whole image: x0, y0 = top-left corner,
+x1, y1 = bottom-right corner, all between 0 and 1 where (0,0) is the
+top-left of the image and (1,1) the bottom-right. Make the box snug around
+the actual ink (letters/symbols), not the whole page. Example for an
+expression centered in the upper third: [0.35, 0.05, 0.7, 0.12].
  
 Rules:
 - If an enclosure and checkmark/star trigger are present, classify and
@@ -90,6 +99,27 @@ def _extract_json_object(text:str)->dict:
     return result
 
 
+def _normalize_bbox(value) -> list:
+    """Coerce the model's content_bbox into [x0, y0, x1, y1] fractions."""
+    default = [0.0, 0.0, 1.0, 1.0]
+    if not isinstance(value, (list, tuple)) or len(value) != 4:
+        return default
+    try:
+        coords = [float(v) for v in value]
+    except (TypeError, ValueError):
+        return default
+
+    def clamp(v: float) -> float:
+        return min(1.0, max(0.0, v))
+
+    x0, x1 = sorted([coords[0], coords[2]])
+    y0, y1 = sorted([coords[1], coords[3]])
+    # Guard against a degenerate (zero-area) box
+    if x1 - x0 < 0.02 or y1 - y0 < 0.02:
+        return default
+    return [clamp(x0), clamp(y0), clamp(x1), clamp(y1)]
+
+
 def _as_bool(value)->bool:
     if isinstance(value, bool):
         return value
@@ -103,6 +133,7 @@ def _normalize_result(result:dict)->dict:
         "type": result.get("type") or "unclear",
         "language": result.get("language"),
         "content": result.get("content") or "",
+        "content_bbox": _normalize_bbox(result.get("content_bbox")),
         "annotation_description": result.get("annotation_description") or "",
         "trigger": _as_bool(result.get("trigger")),
         "notes": result.get("notes") or "",

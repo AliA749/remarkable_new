@@ -18,12 +18,13 @@ MAX_OUTPUT_CHAR=4000
 SUPPORTED_LANGUAGES={"python","python3","py"}
 
 class CodeResult:
-    def __init__(self, kind: str, text: str):
-        self.kind = kind#output, error, unsupported
+    def __init__(self, kind: str, text: str, image_path: str | None = None):
+        self.kind = kind  # output, error, unsupported
         self.text = text
+        self.image_path = image_path  # kept None -- code answers are text-only
 
     def __repr__(self):
-        return f"CodeResult(kind={self.kind!r}, text={self.text!r})"
+        return f"CodeResult(kind={self.kind!r}, text={self.text!r}, image_path={self.image_path!r})"
 
 def run_code(code:str, language:str | None)->CodeResult:
     lang=(language or "python").lower()
