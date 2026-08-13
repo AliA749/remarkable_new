@@ -78,16 +78,6 @@ ssh-copy-id root@10.11.99.1
 3. Check the terminal — math results print a solve/simplify result or
    save a graph PNG; code results print stdout/stderr
 
-**Auto-watch over WiFi (no cable needed):**
-1. Connect your tablet to WiFi, then find its WiFi IP: on the tablet,
-   **Settings → Help → About → Copyright and licenses** — look for the
-   IP address listed there (separate from the USB one)
-2. Put that IP in `.env` as `RM_HOST`
-3. Run:
-   ```bash
-   python3 watch.py
-   ```
-   and leave it running in the background
 4. Write on your tablet. To have it act on something, draw a box or
    circle around it, with a checkmark (✓) or star (★/*) right next to
    it. The watcher waits until you've paused writing (~20s of no edits
@@ -104,10 +94,6 @@ when they pile up.
 ## Current limitations
 
 This is an early, working MVP, not a polished tool. Known gaps:
-
-- **`watch.py`'s "settled" detection is time-based, not truly live** —
-  reMarkable has no push-notification hook for page changes, so it's
-  short-interval polling (checks every ~10s, acts after ~20s of no edits).
 - **The on-tablet result is a static PDF copy of the page** — the
   handwritten question plus the answer are baked into a new PDF document
   ("Pipeline results"), so that copy isn't editable. The original
